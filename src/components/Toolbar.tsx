@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useDocStore } from "../store";
 import { PERSON } from "../sync";
+import { exportMarkdown, exportPdf } from "../export";
 
 function checkWebMCPSupport(): boolean {
   return typeof document !== "undefined" && "modelContext" in document;
@@ -8,7 +9,10 @@ function checkWebMCPSupport(): boolean {
 
 export function Toolbar() {
   const [supported] = useState<boolean>(checkWebMCPSupport);
+  const [exportOpen, setExportOpen] = useState(false);
   const selectedBlockId = useDocStore((s) => s.selectedBlockId);
+  const blocks = useDocStore((s) => s.blocks);
+  const comments = useDocStore((s) => s.comments);
 
   return (
     <header className="toolbar">
@@ -30,6 +34,31 @@ export function Toolbar() {
           </span>
         ) : (
           <span>No block selected</span>
+        )}
+      </div>
+      <div className="toolbar__export">
+        <button className="export-button" onClick={() => setExportOpen((v) => !v)}>
+          Export ▾
+        </button>
+        {exportOpen && (
+          <div className="export-menu" onMouseLeave={() => setExportOpen(false)}>
+            <button
+              onClick={() => {
+                exportMarkdown(blocks, comments);
+                setExportOpen(false);
+              }}
+            >
+              Export as Markdown (.md)
+            </button>
+            <button
+              onClick={() => {
+                exportPdf(blocks, comments);
+                setExportOpen(false);
+              }}
+            >
+              Export as PDF
+            </button>
+          </div>
         )}
       </div>
     </header>
