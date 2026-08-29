@@ -8,13 +8,21 @@ import { useDocStore } from "../store";
  * WebMCP enabled, etc.) can discover and call these tools directly against
  * the same live state the human sees on screen — no DOM scraping, no
  * screenshots.
+ *
+ * `insert_block` does NOT write directly into the document. It creates a
+ * pending suggestion that a human must accept (via the ✓/✗ controls in the
+ * UI) before it becomes part of the shared document — a trust boundary for
+ * agent writes that mutate actual content. `add_comment` stays a direct
+ * write since comments are low-risk, additive, and easy to resolve or ignore.
  */
 export function useDocumentTools() {
   const blocks = useDocStore((s) => s.blocks);
+  const pendingBlocks = useDocStore((s) => s.pendingBlocks);
   const comments = useDocStore((s) => s.comments);
   const selectedBlockId = useDocStore((s) => s.selectedBlockId);
-  const insertBlock = useDocStore((s) => s.insertBlock);
+  const proposeBlock = useDocStore((s) => s.proposeBlock);
   const addComment = useDocStore((s) => s.addComment);
+  const resolveComment = useDocStore((s) => s.resolveComment);
   const selectBlock = useDocStore((s) => s.selectBlock);
 
   // 1. Read tool: give the agent the full, structured document state.
@@ -22,7 +30,7 @@ export function useDocumentTools() {
     {
       name: "get_document_state",
       description:
-        "Get the full current state of the shared document: every block (id, text, author) in order, and every open comment (id, the block it's attached to, text, author). Call this before inserting content or commenting so you know current block ids.",
+        "Get the full current state of the shared document: every block (id, text, author) in order, every pending agent-proposed block awaiting human approval, and every comment (id, the block it's attached to, text, author, resolved status). Call this before proposing content or commenting so you know current block ids.",
       inputSchema: { type: "object", properties: {} },
       execute: async () => ({
         content: [
@@ -30,12 +38,25 @@ export function useDocumentTools() {
             type: "text",
             text: JSON.stringify(
               {
-                blocks: blocks.map((b) => ({ id: b.id, text: b.text, createdBy: b.createdBy })),
+                blocks: blocks.map((b) => ({
+                  id: b.id,
+                  text: b.text,
+                  createdBy: b.createdBy,
+                  authorName: b.author?.name,
+                })),
+                pendingBlocks: pendingBlocks.map((p) => ({
+                  id: p.id,
+                  text: p.text,
+                  afterBlockId: p.afterBlockId,
+                  status: "awaiting human approval",
+                })),
                 comments: comments.map((c) => ({
                   id: c.id,
                   blockId: c.blockId,
                   text: c.text,
                   createdBy: c.createdBy,
+                  authorName: c.author?.name,
+                  resolved: c.resolved,
                 })),
               },
               null,
@@ -45,7 +66,7 @@ export function useDocumentTools() {
         ],
       }),
     },
-    [blocks, comments]
+    [blocks, pendingBlocks, comments]
   );
 
   // 2. Read tool: what has the human actually got selected right now?
@@ -72,16 +93,17 @@ export function useDocumentTools() {
     [blocks, selectedBlockId]
   );
 
-  // 3. Write tool: agent adds new content to the document.
+  // 3. Write tool: agent proposes new content. This creates a pending
+  // suggestion that a human must accept before it appears in the document.
   useWebMCP(
     {
       name: "insert_block",
       description:
-        "Insert a new paragraph/block of text into the shared document, placed immediately after the given block id (or at the end if no id is given). Returns the new block's id. The inserted block appears live in the human's editor immediately.",
+        "Propose a new paragraph/block of text to insert into the shared document, placed immediately after the given block id (or at the end if no id is given). This creates a pending suggestion that a human must accept before it appears in the document — it does not write directly. Returns the pending suggestion's id.",
       inputSchema: {
         type: "object",
         properties: {
-          text: { type: "string", description: "The text content of the new block." },
+          text: { type: "string", description: "The text content of the proposed block." },
           afterBlockId: {
             type: "string",
             description: "Id of the block to insert after. Omit to append at the end.",
@@ -90,16 +112,21 @@ export function useDocumentTools() {
         required: ["text"],
       } as const,
       execute: async ({ text, afterBlockId }) => {
-        const block = insertBlock(text, afterBlockId ?? null, "agent");
+        const pending = proposeBlock(text, afterBlockId ?? null);
         return {
-          content: [{ type: "text", text: `Inserted block ${block.id}: "${block.text}"` }],
+          content: [
+            {
+              type: "text",
+              text: `Proposed block ${pending.id}: "${pending.text}". Awaiting human approval before it appears in the document.`,
+            },
+          ],
         };
       },
     },
-    [insertBlock]
+    [proposeBlock]
   );
 
-  // 4. Write tool: agent leaves a comment tied to a specific block.
+  // 4. Write tool: agent leaves a comment tied to a specific block. Direct write.
   useWebMCP(
     {
       name: "add_comment",
@@ -114,20 +141,47 @@ export function useDocumentTools() {
         required: ["blockId", "text"],
       } as const,
       execute: async ({ blockId, text }) => {
-        const exists = blocks.some((b) => b.id === blockId);
-        if (!exists) {
+        const comment = addComment(blockId, text, "agent");
+        if (!comment) {
           return {
             content: [{ type: "text", text: `No block with id "${blockId}". Call get_document_state first.` }],
             isError: true,
           };
         }
-        const comment = addComment(blockId, text, "agent");
         selectBlock(blockId);
         return {
           content: [{ type: "text", text: `Added comment ${comment.id} on block ${blockId}.` }],
         };
       },
     },
-    [blocks, addComment, selectBlock]
+    [addComment, selectBlock]
+  );
+
+  // 5. Write tool: agent marks its own (or any open) comment as resolved
+  // once its feedback has been addressed.
+  useWebMCP(
+    {
+      name: "resolve_comment",
+      description:
+        "Mark an open comment as resolved once its feedback has been addressed. Use get_document_state first to find the comment id.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          commentId: { type: "string", description: "Id of the comment to resolve." },
+        },
+        required: ["commentId"],
+      } as const,
+      execute: async ({ commentId }) => {
+        const ok = resolveComment(commentId);
+        if (!ok) {
+          return {
+            content: [{ type: "text", text: `No comment with id "${commentId}". Call get_document_state first.` }],
+            isError: true,
+          };
+        }
+        return { content: [{ type: "text", text: `Resolved comment ${commentId}.` }] };
+      },
+    },
+    [resolveComment]
   );
 }

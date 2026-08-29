@@ -83,6 +83,10 @@ body {
   box-shadow: 0 0 0 3px #f6dcd8;
 }
 
+.toolbar__person {
+  color: var(--ink-soft);
+}
+
 .toolbar__selection {
   margin-left: auto;
   color: var(--ink-soft);
@@ -164,11 +168,9 @@ body {
   gap: 4px;
 }
 
-.agent-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--agent);
+.agent-badge {
+  font-size: 13px;
+  line-height: 1;
 }
 
 .comment-badge {
@@ -182,6 +184,88 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.block-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.author-tag {
+  display: inline-block;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.author-tag--agent {
+  color: var(--agent);
+}
+
+.presence-row {
+  display: flex;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.presence-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+/* Pending suggestion rows */
+.pending-row {
+  display: flex;
+  gap: 12px;
+  margin: 4px -12px 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1.5px dashed var(--agent);
+  background: var(--agent-soft);
+}
+
+.pending-row__body {
+  flex: 1;
+}
+
+.pending-row__text {
+  font-size: 16px;
+  line-height: 1.55;
+  margin: 4px 0 8px;
+  color: var(--ink);
+}
+
+.pending-row__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pending-row__accept,
+.pending-row__reject {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 3px;
+  padding: 4px 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.pending-row__accept {
+  background: var(--accent);
+  color: #fff;
+}
+
+.pending-row__reject {
+  background: transparent;
+  border-color: var(--ink-soft);
+  color: var(--ink-soft);
 }
 
 .block-title {
@@ -240,6 +324,10 @@ body {
   gap: 12px;
 }
 
+.comment-rail__header--resolved {
+  margin-top: 24px;
+}
+
 .comment-card {
   background: #fff;
   border: 1px solid var(--rule);
@@ -247,6 +335,20 @@ body {
   padding: 10px 12px;
   cursor: pointer;
   font-family: -apple-system, "Segoe UI", sans-serif;
+}
+
+.comment-card--agent {
+  border-left: 3px solid var(--agent);
+}
+
+.comment-card--resolved {
+  cursor: default;
+  opacity: 0.55;
+  background: var(--paper);
+}
+
+.comment-card--resolved .comment-card__text {
+  text-decoration: line-through;
 }
 
 .comment-card__meta {
