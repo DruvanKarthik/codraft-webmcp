@@ -163,6 +163,8 @@ export const useDocStore = create<DocState>((set, get) => ({
   },
 
   _applyRemote: (msg) => {
+    // eslint-disable-next-line no-console
+    console.log("[store] applying remote message:", msg.type, msg.payload);
     switch (msg.type) {
       case "selectBlock": {
         const { personId, blockId } = msg.payload as { personId: string; blockId: string | null };
@@ -221,6 +223,13 @@ export const useDocStore = create<DocState>((set, get) => ({
 
 // Wire the sync layer to the store once, at module load.
 docSync.subscribe((msg) => useDocStore.getState()._applyRemote(msg));
+
+// Debug hooks — lets us inspect live state from the browser console while
+// diagnosing cross-tab sync. Harmless to leave in for a hackathon project.
+if (typeof window !== "undefined") {
+  (window as unknown as { __docStore: typeof useDocStore }).__docStore = useDocStore;
+  (window as unknown as { __docSync: typeof docSync }).__docSync = docSync;
+}
 
 export function getState() {
   return useDocStore.getState();
