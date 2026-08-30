@@ -145,6 +145,7 @@ function EditableBlockText({
       contentEditable
       suppressContentEditableWarning
       onFocus={onFocus}
+      onInput={(e) => onCommit(readMultilineText(e.currentTarget))}
       onBlur={(e) => onCommit(readMultilineText(e.currentTarget))}
     />
   );
