@@ -36,8 +36,6 @@ class DocSync {
       this.channel = new BroadcastChannel(CHANNEL_NAME);
       this.channel.addEventListener("message", (event: MessageEvent<SyncMessage>) => {
         const msg = event.data;
-        // eslint-disable-next-line no-console
-        console.log("[docSync] internal channel received:", msg);
         // Ignore our own broadcasts to avoid infinite loops.
         if (!msg || msg.originTabId === TAB_ID) return;
         this.listeners.forEach((listener) => listener(msg));

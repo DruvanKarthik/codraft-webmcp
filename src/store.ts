@@ -163,8 +163,6 @@ export const useDocStore = create<DocState>((set, get) => ({
   },
 
   _applyRemote: (msg) => {
-    // eslint-disable-next-line no-console
-    console.log("[store] applying remote message:", msg.type, msg.payload);
     switch (msg.type) {
       case "selectBlock": {
         const { personId, blockId } = msg.payload as { personId: string; blockId: string | null };

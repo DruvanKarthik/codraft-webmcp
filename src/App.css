@@ -1,13 +1,16 @@
 :root {
-  --paper: #f7f4ee;
+  --page-bg: #e9e4d8;
+  --paper: #faf8f3;
   --ink: #23241f;
   --ink-soft: #5c5b52;
-  --rule: #ddd7c8;
+  --rule: #e2ddcf;
   --accent: #2f5d50;
   --accent-soft: #dce8e2;
   --agent: #a8562f;
   --agent-soft: #f3e2d3;
-  --radius: 4px;
+  --radius: 5px;
+  --font-serif: "Source Serif 4", Georgia, "Palatino Linotype", serif;
+  --font-ui: "Inter", -apple-system, "Segoe UI", sans-serif;
 }
 
 * {
@@ -22,9 +25,9 @@ body,
 
 body {
   margin: 0;
-  background: var(--paper);
+  background: var(--page-bg);
   color: var(--ink);
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-family: var(--font-serif);
 }
 
 .app {
@@ -38,9 +41,10 @@ body {
   display: flex;
   align-items: center;
   gap: 24px;
-  padding: 14px 28px;
+  padding: 14px 32px;
   border-bottom: 1px solid var(--rule);
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  background: var(--paper);
+  font-family: var(--font-ui);
   font-size: 12.5px;
   color: var(--ink-soft);
 }
@@ -49,8 +53,9 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: "Iowan Old Style", Georgia, serif;
-  font-size: 17px;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 600;
   color: var(--ink);
   letter-spacing: 0.01em;
 }
@@ -148,12 +153,21 @@ body {
   gap: 0;
   max-width: 1180px;
   width: 100%;
-  margin: 0 auto;
+  margin: 28px auto;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(35, 36, 31, 0.06), 0 10px 30px rgba(35, 36, 31, 0.06);
+  overflow: hidden;
 }
 
 @media (max-width: 860px) {
   .app__main {
     grid-template-columns: 1fr;
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
 }
 
@@ -283,6 +297,8 @@ body {
   line-height: 1.55;
   margin: 4px 0 8px;
   color: var(--ink);
+  white-space: pre-wrap;
+  font-family: var(--font-serif);
 }
 
 .pending-row__actions {
@@ -317,6 +333,7 @@ body {
   font-weight: 600;
   padding: 4px 0 10px;
   outline: none;
+  white-space: pre-wrap;
 }
 
 .block-text {
@@ -325,6 +342,7 @@ body {
   padding: 6px 0;
   outline: none;
   color: var(--ink);
+  white-space: pre-wrap;
 }
 
 .block-text:focus,

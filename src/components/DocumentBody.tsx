@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useDocStore } from "../store";
 import { PERSON } from "../sync";
 
@@ -50,15 +51,12 @@ export function DocumentBody() {
                   </span>
                 )}
                 {isAgent && <span className="author-tag author-tag--agent">Agent</span>}
-                <div
+                <EditableBlockText
+                  text={block.text}
                   className={isTitle ? "block-title" : "block-text"}
-                  contentEditable
-                  suppressContentEditableWarning
                   onFocus={() => selectBlock(block.id)}
-                  onBlur={(e) => editBlock(block.id, e.currentTarget.textContent ?? "")}
-                >
-                  {block.text}
-                </div>
+                  onCommit={(text) => editBlock(block.id, text)}
+                />
                 {remoteSelectors.length > 0 && (
                   <div className="presence-row">
                     {remoteSelectors.map(([personId]) => (
@@ -84,6 +82,71 @@ export function DocumentBody() {
           <PendingRow key={p.id} text={p.text} onAccept={() => acceptSuggestion(p.id)} onReject={() => rejectSuggestion(p.id)} />
         ))}
     </div>
+  );
+}
+
+/**
+ * A contentEditable div whose text is kept in sync with an external string
+ * (`text`) that can change from sources other than local typing — e.g. a
+ * BroadcastChannel update from another tab, or an agent's edit.
+ *
+ * React does not reliably re-render a contentEditable element's DOM content
+ * when its children prop changes, because the browser (not React) owns that
+ * subtree once it's editable. So instead of relying on React's diffing, we
+ * imperatively set `element.textContent` in an effect whenever `text`
+ * changes — but only when the element isn't currently focused, so we never
+ * clobber a human who is actively typing in it.
+ */
+/** Convert a contentEditable element's DOM structure (nested <div>/<br> per line) into a plain string with real newlines, since `textContent` alone collapses all lines together. */
+function readMultilineText(el: HTMLElement): string {
+  const html = el.innerHTML
+    .replace(/<div><br\s*\/?><\/div>/gi, "\n")
+    .replace(/<\/div>\s*<div>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?div>/gi, "")
+    .replace(/&nbsp;/gi, " ");
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent ?? "").replace(/\u00a0/g, " ");
+}
+
+function EditableBlockText({
+  text,
+  className,
+  onFocus,
+  onCommit,
+}: {
+  text: string;
+  className: string;
+  onFocus: () => void;
+  onCommit: (text: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (document.activeElement === el) return; // don't clobber active local edits
+    if (el.textContent !== text) {
+      // Render each line as its own text node separated by <br>, so multi-line
+      // text displays correctly and re-editing produces consistent line breaks.
+      el.innerHTML = "";
+      text.split("\n").forEach((line, i) => {
+        if (i > 0) el.appendChild(document.createElement("br"));
+        el.appendChild(document.createTextNode(line));
+      });
+    }
+  }, [text]);
+
+  return (
+    <div
+      ref={ref}
+      className={className}
+      contentEditable
+      suppressContentEditableWarning
+      onFocus={onFocus}
+      onBlur={(e) => onCommit(readMultilineText(e.currentTarget))}
+    />
   );
 }
 
