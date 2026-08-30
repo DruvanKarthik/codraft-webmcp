@@ -71,16 +71,16 @@ function insertAt(blocks: Block[], block: Block, afterBlockId?: string | null): 
 }
 
 const initialBlocks: Block[] = [
-  { id: nanoid(8), text: "Q3 Launch Plan", createdBy: "human", author: PERSON },
+  { id: "title", text: "Q3 Launch Plan", createdBy: "human", author: PERSON },
   {
-    id: nanoid(8),
+    id: "intro",
     text: "We're aiming to ship the redesigned onboarding flow by the end of the quarter. Below is the rough outline — flesh out each section.",
     createdBy: "human",
     author: PERSON,
   },
-  { id: nanoid(8), text: "1. Problem statement", createdBy: "human", author: PERSON },
-  { id: nanoid(8), text: "2. Proposed solution", createdBy: "human", author: PERSON },
-  { id: nanoid(8), text: "3. Rollout plan", createdBy: "human", author: PERSON },
+  { id: "section-1", text: "1. Problem statement", createdBy: "human", author: PERSON },
+  { id: "section-2", text: "2. Proposed solution", createdBy: "human", author: PERSON },
+  { id: "section-3", text: "3. Rollout plan", createdBy: "human", author: PERSON },
 ];
 
 export const useDocStore = create<DocState>((set, get) => ({
